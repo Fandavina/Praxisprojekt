@@ -1,0 +1,7 @@
+*.bmp
+*.obj
+*.bin
+
+/x64
+/Debug
+*.nvuser

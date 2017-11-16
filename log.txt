@@ -1,0 +1,12 @@
+Tue Nov 14 13:42:18 2017--------------------------------BEGIN SESSION-----------------------------
+Tue Nov 14 13:42:19 2017	ERROR invalid argument
+Tue Nov 14 13:55:34 2017--------------------------------BEGIN SESSION-----------------------------
+Tue Nov 14 13:55:36 2017	ERROR invalid argument
+Tue Nov 14 13:56:52 2017--------------------------------BEGIN SESSION-----------------------------
+Tue Nov 14 13:56:53 2017	ERROR invalid argument
+Tue Nov 14 14:24:09 2017--------------------------------BEGIN SESSION-----------------------------
+Tue Nov 14 14:24:16 2017	WARNING Keine gespeicherte ConvLayer unter D:\Praxisprojekt\Praxisprojekt\Praxisprojekt\Saved\conv.bingefunden
+Wed Nov 15 12:38:34 2017--------------------------------BEGIN SESSION-----------------------------
+Wed Nov 15 12:38:36 2017	ERROR CUBLAS_STATUS_INVALID_VALUE
+Wed Nov 15 12:39:03 2017--------------------------------BEGIN SESSION-----------------------------
+Wed Nov 15 12:39:04 2017	ERROR CUBLAS_STATUS_INVALID_VALUE
