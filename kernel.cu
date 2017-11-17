@@ -11,7 +11,7 @@ int main()
 	ErrorHandler *error = &ErrorHandler::getInstance();
 	Network train;
 	float learningrate = 0.05;
-	int trainiter = 100;
+	int trainiter = 1;
 	train.train(false,false, learningrate, trainiter);
 	train.test(false);
 

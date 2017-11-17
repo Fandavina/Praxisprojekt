@@ -91,8 +91,8 @@ void Network::train(bool pretrained,bool withworkspace,float learningrate,int it
 	layerhandle.copyLayertoDev();
 	layerhandle.copytoLayertoDevBwD();
 	/*Training*/
-	for(int i=0;i<iter;i++){
-		error->checkError(cudaSetDevice(workinggpu));
+	error->checkError(cudaSetDevice(workinggpu));
+	for(int i=0;i<iter;i++){		
 		for (int ID = 0; ID < imagehandle.images.size(); ID+=batchSize) {
 			predict = ForwardPropagationwCopy(imagesfloat, ID, outputfwd);
 			error->checkError(cudaDeviceSynchronize());
@@ -130,7 +130,6 @@ void Network::train(bool pretrained,bool withworkspace,float learningrate,int it
 	saveNetwork();
 	layerhandle.freeDev();
 	error->checkError(cudaDeviceReset());
-
 }
 
 float* Network::ForwardPropagation(float*imagesfloat) {
@@ -304,11 +303,12 @@ Network::~Network() {
 }
 
 float* Network::makeImageFloat(std::vector<Image> images) {
+	int size = 0;
 	float* fl = new float[imagesize*images.size()];
 	for (int i = 0; i < images.size(); i++) {
 		std::vector<float> akt = images[i].data;
 		for (int j = 0; j < imagesize; j++) {
-			fl[i*imagesize + j] = akt[j];
+			fl[i*imagesize + j] = akt[j]; size++;
 		}
 	}
 	return fl;

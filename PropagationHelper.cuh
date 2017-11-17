@@ -45,4 +45,8 @@ private:
 
 	void printDevptr(float * ptr, int size);
 
+	void Saxpy(float alphal, size_t size, float * x, int incx, float * y, int incy);
+
+
+
 };
