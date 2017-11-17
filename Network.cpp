@@ -36,7 +36,38 @@ void Network::initNetwork(bool pretrained) {
 void Network::saveNetwork() {
 	layerhandle.saveLayer();
 }
+void Network::test(bool withworkspace) {
+	ImageHandler imagehandle;
+	imagehandle.loadImages(2);
+	int batchSize = imagehandle.images.size() / 2;
+	dim3 imagedim;
+	imagedim.y = imagehandle.images.at(0).InfoHeader.biWidth;
+	imagedim.z = imagehandle.images.at(0).InfoHeader.biHeight;
+	imagedim.x = imagehandle.images.at(0).InfoHeader.biSizeImage;
+	imagedim.x /= imagedim.y;
+	imagedim.x /= imagedim.z;
 
+	set(0, batchSize, imagedim, withworkspace);
+	initNetwork(true);
+	
+	float * labelfloat = makeLabelfloat(imagehandle.images);
+	float * imagesfloat = makeImageFloat(imagehandle.images);
+	float * predict;
+
+	layerhandle.copyLayertoDev();
+	int falseclass = 0;
+	error->checkError(cudaSetDevice(workinggpu));
+	for (int ID = 0; ID < imagehandle.images.size(); ID += batchSize) {
+		predict = ForwardPropagationwCopy(imagesfloat, ID, false);
+		error->checkError(cudaDeviceSynchronize());
+		for (int i = 0; i < baSize; i++) {
+			if (predict[i] != labelfloat[ID+i])falseclass++;
+		}
+	}
+	std::cout << "Wrong Class: " << falseclass<<std::endl;
+	layerhandle.freeDev();
+	error->checkError(cudaDeviceReset());
+}
 void Network::train(bool pretrained,bool withworkspace,float learningrate,int iter)
 {
 	ImageHandler imagehandle;
@@ -51,7 +82,7 @@ void Network::train(bool pretrained,bool withworkspace,float learningrate,int it
 
 	set(0, batchSize, imagedim, withworkspace);
 	initNetwork(pretrained);
-	bool outputfwd = true; bool outputbwd = true; bool outputwupdate = false; bool outputwupdatesum = true;
+	bool outputfwd = true; bool outputbwd = outputfwd; bool outputwupdate = outputfwd; bool outputwupdatesum = true;
 
 	float * labelfloat = makeLabelfloat(imagehandle.images);
 	float * imagesfloat = makeImageFloat(imagehandle.images);
@@ -64,17 +95,24 @@ void Network::train(bool pretrained,bool withworkspace,float learningrate,int it
 		error->checkError(cudaSetDevice(workinggpu));
 		for (int ID = 0; ID < imagehandle.images.size(); ID+=batchSize) {
 			predict = ForwardPropagationwCopy(imagesfloat, ID, outputfwd);
-			std::cout << "Predict " << predict[0] << " , ";
+			error->checkError(cudaDeviceSynchronize());
+			std::cout << "Predict for " << ID << " till " << ID + batchSize << " : (is)";
+			printptr(&predict[0], batchSize); 
+			std::cout<< " ,(must) ";
 			printptr(&labelfloat[ID], batchSize); std::cout << std::endl;
 			if (outputfwd &&outputbwd)std::cout << "________________________________________________________________________________________________________________" << std::endl;			
 			BackwardPropagation(labelfloat, outputbwd);
+			error->checkError(cudaDeviceSynchronize());
 			if (outputfwd || outputbwd)std::cout << "________________________________________________________________________________________________________________" << std::endl;
 			if (outputfwd || outputbwd)std::cout << std::endl;
 			UpdateWeigth(learningrate,outputwupdate);
 		}
 	}
 	/*Controloutput*/
+	if (outputwupdate)	std::cout << "________________________________________________________________________________" << std::endl;
+
 	if (outputwupdatesum) {
+		
 		for (int i = 0; i < layerhandle.convlayers.size(); i++) {
 			layerhandle.convlayers[i].printHostCB(5);
 			layerhandle.convlayers[i].printDevCB(5);
@@ -101,7 +139,22 @@ float* Network::ForwardPropagation(float*imagesfloat) {
 	float* res = FwdPropa(false);
 	return res;
 }
-
+std::vector<std::string> Network::ForwardPropagationString(float*imagesfloat) {
+	layerhandle.copyLayertoDev();
+	layerhandle.copytoDevData(imagesfloat, 0);
+	float* resfloat = FwdPropa(false);
+	std::vector<std::string> res;
+	for (int i = 0; i < baSize; i++) {
+		switch (char(resfloat[i])-'0')
+		{
+		case 1: 
+			res.push_back("Human");
+		default:
+			res.push_back("Not Human");
+		}
+	}
+	return res;
+}
 void Network::UpdateWeigth(float learningrate,bool output) {
 	for(unsigned int i=0;i<layerhandle.convlayers.size();i++){
 		propa.UpdateWeightsConv(learningrate, &layerhandle.convlayers[i],output);
@@ -163,13 +216,13 @@ float * Network::FwdPropa(bool controloutput) {
 		}
 		nxtLayer = nxtLayer->nextLayer;
 	} while (nxtLayer->getTypeId() != Layer::LblLayer);
-
+	error->checkError(cudaDeviceSynchronize());
 	if (controloutput)	std::cout << std::endl << std::endl;
 	if (controloutput) { layerhandle.printDev(5); std::cout << std::endl; }
 
 	int max_digits = layerhandle.lastLayer->outchannel;
 	float *result = new float[max_digits*baSize];
-	error->checkError(cudaMemcpy(result, layerhandle.sfts[layerhandle.sfts.size()-1].ptrToOutData, baSize*max_digits * sizeof(float), cudaMemcpyDeviceToHost));
+	error->checkError(cudaMemcpy(result, layerhandle.lastLayer->prevLayer->ptrToOutData, baSize*max_digits * sizeof(float), cudaMemcpyDeviceToHost));
 	for (int batch = 0; batch < baSize; batch++)
 	{
 		predict[batch] = 0;
@@ -179,6 +232,8 @@ float * Network::FwdPropa(bool controloutput) {
 
 		}
 	}
+	error->checkError(cudaDeviceSynchronize());
+
 	return predict;
 }
 
@@ -220,9 +275,9 @@ void Network::BwdPropa(bool controloutput) {
 			break;
 		case Layer::SoftMax:
 			if (controloutput)std::cout << "Sfw, ";
-			preLayer->ptrToGradData = preLayer->nextLayer->ptrToGradData;
-			/*sft = (SoftMax*)preLayer;
-			propa.softmaxBackward(sft);*/
+			//preLayer->ptrToGradData = preLayer->nextLayer->ptrToGradData;
+			sft = (SoftMax*)preLayer;
+			propa.softmaxBackward(sft);
 			break;
 		case Layer::LocalResponseNormalization:
 			if (controloutput)std::cout << "Lrn, ";
@@ -238,6 +293,7 @@ void Network::BwdPropa(bool controloutput) {
 		}
 		preLayer = preLayer->prevLayer;
 	} while (preLayer != nullptr);
+	error->checkError(cudaDeviceSynchronize());
 	if (controloutput)std::cout << std::endl << std::endl;
 	if (controloutput) { layerhandle.printGrad(5); std::cout << std::endl; }
 	error->checkError(cudaDeviceSynchronize());

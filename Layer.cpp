@@ -38,6 +38,8 @@ void Layer::set(int batchsize)
 	outchannel = inchannel;
 	outheight = inheight;
 	outwidth = inwidth;
+	outputsize = outchannel*outheight*outwidth;
+	inputsize = inchannel*inheight*inwidth;
 }
 /*Set Layer*/
 void Layer::set(int batchsize,int outc,int outh,int outw) {
@@ -51,6 +53,8 @@ void Layer::set(int batchsize,int outc,int outh,int outw) {
 	else { inheight = outheight; }
 	if (prevLayer != nullptr &&prevLayer->outwidth != 0)inwidth = prevLayer->outwidth;
 	else { inwidth = outwidth; }
+	outputsize = outchannel*outheight*outwidth;
+	inputsize = inchannel*inheight*inwidth;
 	
 }
 /*Sets the TensorDescriptors for Cudnn Operation*/
@@ -77,21 +81,16 @@ void Layer::freeDevBwD() {
 	}
 }
 void Layer::mallocDevFwD() {
-	int outputsize = outchannel*outheight*outwidth;
 	error->checkError(cudaMalloc(&ptrToOutData, sizeof(float) * baSize *outputsize));
 }
 void Layer::mallocDevBwD() {
-	int inputsize = inchannel*inheight*inwidth;
 	error->checkError(cudaMalloc(&ptrToGradData, sizeof(float) * baSize *inputsize));
 }
 void Layer::printDev(int dimension,std::string name) {
-	int tensorsize = outchannel*outheight*outwidth;
-	printptrDev(name+"Output", ptrToOutData, dimension, baSize *tensorsize);
+	printptrDev(name+"Output", ptrToOutData, dimension, baSize *outputsize);
 }
 void Layer::printGrad(int dimension, std::string name) {
-	
-	int tensorsize = inchannel*inheight*inwidth;
-	printptrDev(name+"Grad", ptrToGradData, dimension, baSize *tensorsize);
+	printptrDev(name+"Grad", ptrToGradData, dimension, baSize *inputsize);
 }
 void Layer::printptrDev(std::string name, float*devptr, int dimension, size_t size) {
 	
@@ -123,6 +122,29 @@ void Layer::printHost(std::string name, std::vector<float>hostdata, int dimensio
 		std::cout << hostdata[i] << " ";
 	}
 	std::cout << std::endl;
+}
+void Layer::randomGenerator(size_t sizerand, size_t sizevec, std::vector<float>& res)
+{
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	res.resize(sizevec);
+
+	// Xavier weight filling
+	float wfc1 = sqrt(3.0f / (sizerand));
+	std::uniform_real_distribution<> dActi(-wfc1, wfc1);
+	for (int i = 0; i<sizevec; i++)	res[i]=(static_cast<float>(dActi(gen)));
+	/*for (int i = 0; i < sizevec; i++)res[i] = RandomFloat(-1, 1);*/
+}
+float Layer::RandomFloat(float min, float max)
+{
+	// this  function assumes max > min, you may want 
+	// more robust error checking for a non-debug build
+	float random = ((float)rand()) / (float)RAND_MAX;
+
+	// generate (in your case) a float between 0 and (4.5-.78)
+	// then add .78, giving you a float between .78 and 4.5
+	float range = max - min;
+	return (random*range) + min;
 }
 int Layer::getTypeId()
 {

@@ -47,12 +47,12 @@ void LayerHandler::init() {
 	poollayers[1].initpre(prevLayer); prevLayer = &poollayers[1];
 
 	fulls[0].initpre(prevLayer); prevLayer = &fulls[0];
-	activs[0].initpre(prevLayer);prevLayer = &activs[0];
-	lrns[0].initpre(prevLayer);prevLayer = &lrns[0];
+	//activs[0].initpre(prevLayer);prevLayer = &activs[0];
+	//lrns[0].initpre(prevLayer);prevLayer = &lrns[0];
 	
 	fulls[1].initpre(prevLayer); prevLayer = &fulls[1];
-	activs[1].initpre(prevLayer);prevLayer = &activs[1];
-	sfts[0].initpre(prevLayer); prevLayer = &sfts[0];
+	//activs[1].initpre(prevLayer);prevLayer = &activs[1];
+	//sfts[0].initpre(prevLayer); prevLayer = &sfts[0];
 	lbllayer.initpre(prevLayer);
 }
 void LayerHandler::setLayer(int channels, int width, int height, int batchSize) {

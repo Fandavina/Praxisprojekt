@@ -10,9 +10,10 @@ int main()
 
 	ErrorHandler *error = &ErrorHandler::getInstance();
 	Network train;
-	float learningrate = 0.5;
-	int trainiter = 1;
+	float learningrate = 0.05;
+	int trainiter = 100;
 	train.train(false,false, learningrate, trainiter);
+	train.test(false);
 
 	system("Pause");
 }

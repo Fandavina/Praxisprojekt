@@ -64,11 +64,13 @@ void PropagationHelper::activationForward(Activation *activation)
 void PropagationHelper::fullyConnectedForward(FullyConnectedLayer *full)
 {
 	error->checkError(cudaMemcpy(full->ptrToOutData, full->ptrtoDevBias, full->outchannel * sizeof(float), cudaMemcpyDeviceToDevice));
-	gemm(CUBLAS_OP_T, 
-		full->outchannel, baSize, full->inchannel,
-		full->ptrtoDevNeuron, full->inchannel,
-		full->prevLayer->ptrToOutData, full->inchannel,
+	gemm(CUBLAS_OP_T, CUBLAS_OP_N,
+		full->outchannel, baSize, full->inputsize,
+		alpha, beta,
+		full->ptrtoDevNeuron, full->inputsize,
+		full->prevLayer->ptrToOutData, full->inputsize,
 		full->ptrToOutData, full->outchannel);
+	error->checkError(cudaDeviceSynchronize());
 	gemm(CUBLAS_OP_N, CUBLAS_OP_N,
 		full->outchannel, baSize, 1,
 		alpha, alpha,
@@ -86,11 +88,11 @@ void PropagationHelper::softmaxBackward(SoftMax *softmax) {
 	error->checkError(cudaDeviceSynchronize());
 }
 void PropagationHelper::fullyConnectedBackward(FullyConnectedLayer *full) {
-	gemm(CUBLAS_OP_N,
-		full->inchannel, baSize, full->outchannel, 
-		full->ptrtoDevNeuron, full->inchannel,
-		full->nextLayer->ptrToGradData, full->outchannel, 
-		full->ptrToGradData, full->inchannel);
+	gemm(CUBLAS_OP_N, CUBLAS_OP_N,
+		full->inputsize, baSize, full->outchannel, alpha, beta,
+		full->ptrtoDevNeuron, full->inputsize,
+		full->nextLayer->ptrToGradData, full->outchannel,
+		full->ptrToGradData, full->inputsize);
 	error->checkError(cudaDeviceSynchronize());
 }
 void PropagationHelper::activationBackward(Activation *activation) {
@@ -118,6 +120,16 @@ void PropagationHelper::poolBackward(MaxPoolLayer*pool) {
 	error->checkError(cudaDeviceSynchronize());
 }
 void PropagationHelper::convBackward(ConvLayer*conv) {
+	error->checkError(cudnnConvolutionBackwardBias(handle->cudnnHandle, &alpha,
+		conv->DstTensor, conv->nextLayer->ptrToGradData,		//dy
+		&beta, conv->BiasTensorDescr, conv->ptrToGradDevBias));	//db
+
+	error->checkError(cudnnConvolutionBackwardFilter(handle->cudnnHandle, &alpha,
+		*conv->SrcTensor, conv->prevLayer->ptrToOutData, //x
+		conv->DstTensor, conv->nextLayer->ptrToGradData,//dy
+		conv->Descr, conv->AlgoBwd, workspace, workspaceSize,
+		&beta, conv->FilterDescr, conv->ptrToGradDevConv));//dw
+	
 	if (conv->dataAlgo) error->checkError(cudnnConvolutionBackwardData(handle->cudnnHandle, &alpha,
 		conv->FilterDescr, conv->ptrToDevConv,				// w
 		conv->DstTensor, conv->nextLayer->ptrToGradData,	//dy
@@ -129,15 +141,7 @@ void PropagationHelper::convBackward(ConvLayer*conv) {
 void PropagationHelper::UpdateWeightsConv(float learning_rate,ConvLayer* conv,bool output)
 {
 	float alphal = -learning_rate;
-	error->checkError(cudnnConvolutionBackwardBias(handle->cudnnHandle, &alpha,
-		conv->DstTensor, conv->nextLayer->ptrToGradData,		//dy
-		&beta, conv->BiasTensorDescr, conv->ptrToGradDevBias));	//db
 
-	error->checkError(cudnnConvolutionBackwardFilter(handle->cudnnHandle, &alpha,
-		*conv->SrcTensor, conv->prevLayer->ptrToOutData, //x
-		conv->DstTensor, conv->nextLayer->ptrToGradData,//dy
-		conv->Descr, conv->AlgoBwd, workspace, workspaceSize,
-		&beta, conv->FilterDescr, conv->ptrToGradDevConv));//dw
 	if(output){
 		conv->printDevCB(5);
 		conv->printGradCB(5);
@@ -158,7 +162,7 @@ void PropagationHelper::UpdateWeightsConv(float learning_rate,ConvLayer* conv,bo
 void PropagationHelper::UpdateWeightsFull(float learning_rate, FullyConnectedLayer *full,bool output) {
 	float alphal = -learning_rate;
 	float* dstData;
-	error->checkError(cudaMalloc(&dstData, sizeof(float)* full->inchannel*full->outchannel));
+	error->checkError(cudaMalloc(&dstData, sizeof(float)* full->inchannel*full->inheight*full->inwidth*full->outchannel));
 	float* srcdata = full->prevLayer->ptrToOutData;
 	float* diffdata = full->nextLayer->ptrToGradData;
 	if(output){
@@ -166,29 +170,43 @@ void PropagationHelper::UpdateWeightsFull(float learning_rate, FullyConnectedLay
 		full->printGradCB(5);
 		std::cout << "____________________________________________________________________" << std::endl;
 	}
-	gemm(CUBLAS_OP_N,CUBLAS_OP_T,
+	gemm(CUBLAS_OP_N, CUBLAS_OP_T,
+		full->inputsize, full->outchannel, baSize,
 		alpha, beta,
-		full->inchannel, full->outchannel, baSize,
-		srcdata, full->inchannel,
-		diffdata, full->outchannel,
-		dstData, full->inchannel);
-
-	geam(CUBLAS_OP_N, full->inchannel, full->outchannel, alphal, alpha,
-		dstData, full->inchannel,
-		full->ptrToGradDevNeuron, full->inchannel,
-		full->ptrtoDevNeuron, full->inchannel);
-	
-	error->checkError(cudaMalloc(&dstData, sizeof(float)* full->outchannel));
+		full->prevLayer->ptrToOutData, full->inputsize,
+		full->nextLayer->ptrToGradData, full->outchannel,
+		full->ptrToGradDevNeuron, full->inputsize);
 	gemv(full->outchannel, baSize,
-		diffdata, full->outchannel,
+		full->nextLayer->ptrToGradData, full->outchannel,
 		onevec, 1,
-		dstData, 1);
-	
-	geam(CUBLAS_OP_N, 1, full->outchannel,
-		alphal, alpha,
-		dstData, 1,
-		full->ptrToGradDevBias, 1,
-		full->ptrtoDevBias, 1);
+		full->ptrToGradDevBias, 1);
+	error->checkError(cublasSaxpy_v2(handle->cublasHandle, static_cast<int>(full->pneurons.size()),
+		&alpha, full->ptrToGradDevNeuron, 1, full->ptrtoDevNeuron, 1));
+	error->checkError(cublasSaxpy_v2(handle->cublasHandle, static_cast<int>(full->pbias.size()),
+		&alpha, full->ptrToGradDevBias, 1, full->ptrToGradDevBias, 1));
+	//gemm(CUBLAS_OP_N,CUBLAS_OP_T,
+	//	alpha, beta,
+	//	full->inchannel, full->outchannel, baSize,
+	//	srcdata, full->inchannel,
+	//	diffdata, full->outchannel,
+	//	dstData, full->inchannel);
+
+	//geam(CUBLAS_OP_N, full->inchannel, full->outchannel, alphal, alpha,
+	//	dstData, full->inchannel,
+	//	full->ptrtoDevNeuron, full->inchannel,
+	//	full->ptrtoDevNeuron, full->inchannel);
+	//
+	//error->checkError(cudaMalloc(&dstData, sizeof(float)* full->outchannel));
+	//gemv(full->outchannel, baSize,
+	//	diffdata, full->outchannel,
+	//	onevec, 1,
+	//	dstData, 1);
+	//
+	//geam(CUBLAS_OP_N, 1, full->outchannel,
+	//	alphal, alpha,
+	//	dstData, 1,
+	//	full->ptrtoDevBias, 1,
+	//	full->ptrtoDevBias, 1);
 	if (output) {
 		full->printDevNB(5);
 		std::cout << "__________________________________________________________________________________________________________________________________" << std::endl;

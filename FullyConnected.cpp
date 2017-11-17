@@ -42,10 +42,9 @@ FullyConnectedLayer::FullyConnectedLayer(int outputs_, int batchSize) {
 
 }
 void FullyConnectedLayer::set( int outputs_, int batchSize) {
-	int inputs_ = prevLayer->outchannel;
-	pneurons.resize(inputs_* outputs_);
-	pbias.resize(outputs_);
 	Layer::set(batchSize,outputs_,1,1);
+	pneurons.resize(inputsize* outputsize);
+	pbias.resize(outputs_);
 }
 void FullyConnectedLayer::initLayer(const char *fileprefix) {
 	std::string ssf = "";
@@ -91,17 +90,8 @@ void FullyConnectedLayer::initRandom() {
 		error->throwError("FullInit failed. Reason: pbiassize =0");
 	}
 	// Create random network
-	std::random_device rd;
-	std::mt19937 gen;
-
-	// Xavier weight filling
-	float wfc1 = sqrt(3.0f / (inchannel * outchannel));
-	std::uniform_real_distribution<> dActi(-wfc1, wfc1);
-
-	for (int i = 0; i < pneurons.size(); i++)
-		pneurons[i] = static_cast<float>(dActi(gen));
-	for (int i = 0; i < pbias.size(); i++)
-		pbias[i] = static_cast<float>(dActi(gen));
+	randomGenerator(inchannel*outchannel, pneurons.size(), pneurons);
+	randomGenerator(inchannel*outchannel, pbias.size(), pbias);
 
 }
 void FullyConnectedLayer::saveLayer(const char *fileprefix) {

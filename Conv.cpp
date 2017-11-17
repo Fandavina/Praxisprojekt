@@ -176,17 +176,8 @@ void ConvLayer::initRandom() {
 		error->throwError("ConvInit failed. Reason: pbiassize =0");
 	}
 	// Create random network
-	std::random_device rd;
-	std::mt19937 gen;
-	// Xavier weight filling
-	float wconv1 = sqrt(3.0f / (kernel_size * kernel_size * inchannel));
-	std::uniform_real_distribution<> dconv1(-wconv1, wconv1);
-
-	// Randomize network
-	for (int i = 0; i < pconv.size(); i++)
-		pconv[i] = static_cast<float>(dconv1(gen));
-	for (int i = 0; i < pbias.size(); i++)
-		pbias[i] = static_cast<float>(dconv1(gen));
+	randomGenerator(kernel_size * kernel_size * inchannel, pconv.size(),pconv);
+	randomGenerator(kernel_size * kernel_size * inchannel, pbias.size(),pbias);
 }
 void ConvLayer::saveLayer(const char *fileprefix) {
 	std::string ssf = "";

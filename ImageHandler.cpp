@@ -32,7 +32,9 @@ void  ImageHandler::loadImages(int mode) {
 	if (mode == 2) {
 		dir += "\\Testing\\";
 		std::vector<std::string> filename = getFileNames(dir);
+		std::map<std::string, int> label = getLabel(dir, (int)filename.size());
 		images = getImages(dir, filename);
+		matchImages(images, label);
 	}
 
 }

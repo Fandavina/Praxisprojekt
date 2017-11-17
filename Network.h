@@ -17,10 +17,12 @@ public:
 	void initNetwork(bool pretrained);
 	/*Save NetworkLayer(Conv,Full) to Saved File*/
 	void saveNetwork();
+	void test(bool withworkspace);
 	/*pretrained = false => initRandom*/
 	void train(bool pretrained, bool withworkspace, float learningrate, int inter);
 	/*Predict the Class of the Image */
 	float * ForwardPropagation(float * imagesfloat);
+	std::vector<std::string> Network::ForwardPropagationString(float*imagesfloat);
 	/*Destroys the Network and reset the Grafikcard*/
 	~Network();
 

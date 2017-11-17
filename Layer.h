@@ -37,8 +37,10 @@ public:
 	
 	/*Outputdimension*/
 	int outchannel, outwidth, outheight;
+	int outputsize = 0;
 	/*Inputdimension*/
 	int inchannel, inwidth, inheight;
+	int inputsize = 0;
 	/*Batch Size*/
 	int baSize;
 
@@ -86,7 +88,8 @@ protected:
 	void printptrDev(std::string name, float * devptr, int dimension, size_t size);
 	void printHostptr(std::string name, float * ptr, int dimension, size_t size);
 	void printHost(std::string name, std::vector<float> hostdata, int dimension, size_t size);
-
+	void randomGenerator(size_t sizerand, size_t sizevec,std::vector<float>&res);
+	float RandomFloat(float min, float max);
 	void set(int batchsize, int outc, int outh, int outw);
 };
 
