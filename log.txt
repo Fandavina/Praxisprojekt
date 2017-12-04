@@ -24,3 +24,21 @@ Fri Nov 17 15:02:39 2017--------------------------------BEGIN SESSION-----------
 Fri Nov 17 15:02:51 2017	ERROR invalid argument
 Fri Nov 17 15:05:52 2017--------------------------------BEGIN SESSION-----------------------------
 Fri Nov 17 15:06:06 2017	ERROR invalid argument
+Fri Nov 17 15:15:15 2017--------------------------------BEGIN SESSION-----------------------------
+Fri Nov 17 15:15:27 2017	ERROR an illegal memory access was encountered
+Fri Nov 17 15:16:02 2017--------------------------------BEGIN SESSION-----------------------------
+Fri Nov 17 15:16:14 2017	ERROR an illegal memory access was encountered
+Fri Nov 17 15:16:55 2017--------------------------------BEGIN SESSION-----------------------------
+Fri Nov 17 15:17:07 2017	ERROR out of memory
+Sat Nov 18 13:16:21 2017--------------------------------BEGIN SESSION-----------------------------
+Sat Nov 18 13:16:35 2017	ERROR out of memory
+Sat Nov 18 13:37:33 2017--------------------------------BEGIN SESSION-----------------------------
+Sat Nov 18 13:37:45 2017	ERROR an illegal memory access was encountered
+Sat Nov 18 13:39:01 2017--------------------------------BEGIN SESSION-----------------------------
+Sat Nov 18 13:39:14 2017	ERROR an illegal memory access was encountered
+Sat Nov 18 14:06:18 2017--------------------------------BEGIN SESSION-----------------------------
+Sat Nov 18 14:06:37 2017	ERROR an illegal memory access was encountered
+Sat Nov 18 14:08:14 2017--------------------------------BEGIN SESSION-----------------------------
+Sat Nov 18 14:08:29 2017	ERROR an illegal memory access was encountered
+Sat Nov 18 14:10:59 2017--------------------------------BEGIN SESSION-----------------------------
+Sat Nov 18 14:11:29 2017	ERROR invalid device pointer

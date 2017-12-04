@@ -31,10 +31,11 @@ void LayerHandler::freeDev() {
 	}
 }
 void LayerHandler::init() {
-	convlayers.resize(2); poollayers.resize(2); fulls.resize(2); activs.resize(2);
+	convlayers.resize(3); poollayers.resize(3); fulls.resize(2); activs.resize(2);
 	lrns.resize(1); sfts.resize(1);
 	outcconv.insert_or_assign(0, 20);
 	outcconv.insert_or_assign(1, 50);
+	outcconv.insert_or_assign(2, 70);
 
 	outcfull.insert_or_assign(0, 500);
 	outcfull.insert_or_assign(1, 10);
@@ -45,7 +46,8 @@ void LayerHandler::init() {
 	poollayers[0].initpre(prevLayer); prevLayer = &poollayers[0];
 	convlayers[1].initpre(prevLayer); prevLayer = &convlayers[1];
 	poollayers[1].initpre(prevLayer); prevLayer = &poollayers[1];
-
+	convlayers[2].initpre(prevLayer); prevLayer = &convlayers[2];
+	poollayers[2].initpre(prevLayer); prevLayer = &poollayers[2];
 	fulls[0].initpre(prevLayer); prevLayer = &fulls[0];
 	//activs[0].initpre(prevLayer);prevLayer = &activs[0];
 	//lrns[0].initpre(prevLayer);prevLayer = &lrns[0];

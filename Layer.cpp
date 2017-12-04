@@ -90,7 +90,11 @@ void Layer::printDev(int dimension,std::string name) {
 	printptrDev(name+"Output", ptrToOutData, dimension, baSize *outputsize);
 }
 void Layer::printGrad(int dimension, std::string name) {
+	printptrDev(name + "Input", ptrToOutData, dimension, baSize*outputsize);
+	if(nextLayer!=nullptr)printptrDev(name + "InputG", nextLayer->ptrToGradData, dimension, baSize*outputsize);
 	printptrDev(name+"Grad", ptrToGradData, dimension, baSize *inputsize);
+	std::cout << "_______" << std::endl;
+
 }
 void Layer::printptrDev(std::string name, float*devptr, int dimension, size_t size) {
 	

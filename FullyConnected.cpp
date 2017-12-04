@@ -3,8 +3,8 @@
 void FullyConnectedLayer::mallocDevFwD()
 {
 	Layer::mallocDevFwD();
-	error->checkError(cudaMalloc(&ptrtoDevNeuron, sizeof(float) * pneurons.size()));
-	error->checkError(cudaMalloc(&ptrtoDevBias, sizeof(float) * pbias.size()));
+	error->checkError(cudaMalloc(&ptrToDevNeuron, sizeof(float) * pneurons.size()));
+	error->checkError(cudaMalloc(&ptrToDevBias, sizeof(float) * pbias.size()));
 }
 void FullyConnectedLayer::mallocDevBwD()
 {
@@ -15,13 +15,13 @@ void FullyConnectedLayer::mallocDevBwD()
 }
 
 void FullyConnectedLayer::freeDevFwDData() {
-	if (ptrtoDevNeuron != nullptr) {
-		error->checkError(cudaFree(ptrtoDevNeuron));
-		ptrtoDevNeuron = nullptr;
+	if (ptrToDevNeuron != nullptr) {
+		error->checkError(cudaFree(ptrToDevNeuron));
+		ptrToDevNeuron = nullptr;
 	}
-	if (ptrtoDevBias != nullptr) {
-		error->checkError(cudaFree(ptrtoDevBias));
-		ptrtoDevBias = nullptr;
+	if (ptrToDevBias != nullptr) {
+		error->checkError(cudaFree(ptrToDevBias));
+		ptrToDevBias = nullptr;
 	}
 }
 void FullyConnectedLayer::freeDevBwDData() {
@@ -128,21 +128,21 @@ void FullyConnectedLayer::saveLayer(const char *fileprefix) {
 	fclose(fp);
 }
 void FullyConnectedLayer::copyToDevFwD() {
-	error->checkError(cudaMemcpyAsync(ptrtoDevNeuron, &pneurons[0], sizeof(float) * pneurons.size(), cudaMemcpyHostToDevice));
-	error->checkError(cudaMemcpyAsync(ptrtoDevBias, &pbias[0], sizeof(float) * pbias.size(), cudaMemcpyHostToDevice));
+	error->checkError(cudaMemcpyAsync(ptrToDevNeuron, &pneurons[0], sizeof(float) * pneurons.size(), cudaMemcpyHostToDevice));
+	error->checkError(cudaMemcpyAsync(ptrToDevBias, &pbias[0], sizeof(float) * pbias.size(), cudaMemcpyHostToDevice));
 }
 void FullyConnectedLayer::copyToDevBwD() {
-	error->checkError(cudaMemcpyAsync(&ptrToGradDevNeuron[0], ptrtoDevNeuron, sizeof(float) * pneurons.size(), cudaMemcpyDeviceToDevice));
-	error->checkError(cudaMemcpyAsync(&ptrToGradDevBias[0], ptrtoDevBias, sizeof(float) * pbias.size(), cudaMemcpyDeviceToDevice));
+	error->checkError(cudaMemcpyAsync(&ptrToGradDevNeuron[0], ptrToDevNeuron, sizeof(float) * pneurons.size(), cudaMemcpyDeviceToDevice));
+	error->checkError(cudaMemcpyAsync(&ptrToGradDevBias[0], ptrToDevBias, sizeof(float) * pbias.size(), cudaMemcpyDeviceToDevice));
 
 }
 void FullyConnectedLayer::copyToHost() {
-	error->checkError(cudaMemcpy(&pneurons[0], ptrtoDevNeuron, sizeof(float) * pneurons.size(), cudaMemcpyDeviceToHost));
-	error->checkError(cudaMemcpy(&pbias[0], ptrtoDevBias, sizeof(float) * pbias.size(), cudaMemcpyDeviceToHost));
+	error->checkError(cudaMemcpy(&pneurons[0], ptrToDevNeuron, sizeof(float) * pneurons.size(), cudaMemcpyDeviceToHost));
+	error->checkError(cudaMemcpy(&pbias[0], ptrToDevBias, sizeof(float) * pbias.size(), cudaMemcpyDeviceToHost));
 }
 void FullyConnectedLayer::printDevNB(int dimension) {
-	printptrDev("FullData Device", ptrtoDevNeuron, dimension, pneurons.size());
-	printptrDev("BiasData Device", ptrtoDevBias, dimension, pbias.size());
+	printptrDev("FullData Device", ptrToDevNeuron, dimension, pneurons.size());
+	printptrDev("BiasData Device", ptrToDevBias, dimension, pbias.size());
 }
 void FullyConnectedLayer::printHostNB(int dimension) {
 	printHost("FullData Host", pneurons, dimension, pneurons.size());

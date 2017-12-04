@@ -129,11 +129,10 @@ ConvLayer::ConvLayer( int out_channels_, int kernel_size_, int batchsize) {
 }
 void ConvLayer::set(int out_channels_, int kernel_size_,int batchsize) {
 	kernel_size = kernel_size_;
-	outchannel = out_channels_;
-	pbias.resize(out_channels_);
-
-	pconv.resize(prevLayer->inchannel * kernel_size_ * kernel_size_ * out_channels_); //Size = FilterDescr size
 	Layer::set(batchsize, out_channels_, prevLayer->outheight - kernel_size_ + 1, prevLayer->outwidth - kernel_size_ + 1);
+	pbias.resize(outchannel);
+	pconv.resize(inchannel * kernel_size_ * kernel_size_ * outchannel); //Size = FilterDescr size
+
 }
 void ConvLayer::initLayer(const char *fileprefix) {
 	std::string ssf = "";

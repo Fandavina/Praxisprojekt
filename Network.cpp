@@ -82,7 +82,7 @@ void Network::train(bool pretrained,bool withworkspace,float learningrate,int it
 
 	set(0, batchSize, imagedim, withworkspace);
 	initNetwork(pretrained);
-	bool outputfwd = true; bool outputbwd = outputfwd; bool outputwupdate = outputfwd; bool outputwupdatesum = true;
+	bool outputfwd = false; bool outputbwd = true; bool outputwupdate = outputbwd; bool outputwupdatesum = true;
 
 	float * labelfloat = makeLabelfloat(imagehandle.images);
 	float * imagesfloat = makeImageFloat(imagehandle.images);

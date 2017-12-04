@@ -63,18 +63,18 @@ void PropagationHelper::activationForward(Activation *activation)
 }
 void PropagationHelper::fullyConnectedForward(FullyConnectedLayer *full)
 {
-	error->checkError(cudaMemcpy(full->ptrToOutData, full->ptrtoDevBias, full->outputsize * sizeof(float), cudaMemcpyDeviceToDevice));
+	error->checkError(cudaMemcpy(full->ptrToOutData, full->ptrToDevBias, full->outputsize * sizeof(float), cudaMemcpyDeviceToDevice));
 	gemm(CUBLAS_OP_T, CUBLAS_OP_N,
 		full->outputsize, baSize, full->inputsize,
 		alpha, beta,
-		full->ptrtoDevNeuron, full->inputsize,
+		full->ptrToDevNeuron, full->inputsize,
 		full->prevLayer->ptrToOutData, full->inputsize,
 		full->ptrToOutData, full->outputsize);
 	error->checkError(cudaDeviceSynchronize());
 	gemm(CUBLAS_OP_N, CUBLAS_OP_N,
 		full->outputsize, baSize, 1,
 		alpha, alpha,
-		full->ptrtoDevBias, full->outputsize,
+		full->ptrToDevBias, full->outputsize,
 		onevec, 1,
 		full->ptrToOutData, full->outputsize);
 	error->checkError(cudaDeviceSynchronize());
@@ -90,7 +90,7 @@ void PropagationHelper::softmaxBackward(SoftMax *softmax) {
 void PropagationHelper::fullyConnectedBackward(FullyConnectedLayer *full) {
 	gemm(CUBLAS_OP_N, CUBLAS_OP_N,
 		full->inputsize, baSize, full->outputsize, alpha, beta,
-		full->ptrtoDevNeuron, full->inputsize,
+		full->ptrToDevNeuron, full->inputsize,
 		full->nextLayer->ptrToGradData, full->outputsize,
 		full->ptrToGradData, full->inputsize);
 	error->checkError(cudaDeviceSynchronize());
@@ -131,6 +131,7 @@ void PropagationHelper::convBackward(ConvLayer*conv) {
 void PropagationHelper::UpdateWeightsConv(float learning_rate,ConvLayer* conv,bool output)
 {
 	float alphal = -learning_rate;
+	float* dstData;
 	error->checkError(cudnnConvolutionBackwardBias(handle->cudnnHandle, &alpha,
 		conv->DstTensor, conv->nextLayer->ptrToGradData,		//dy
 		&beta, conv->BiasTensorDescr, conv->ptrToGradDevBias));	//db
@@ -145,9 +146,10 @@ void PropagationHelper::UpdateWeightsConv(float learning_rate,ConvLayer* conv,bo
 		conv->printGradCB(5);
 		std::cout << "____________________________________________________________________" << std::endl;
 	}
+	Saxpy(alphal, conv->pbias.size(), conv->ptrToGradDevBias, 1, conv->ptrToDevBias, 1);
 
 	Saxpy(alphal,conv->pconv.size(), conv->ptrToGradDevConv, 1, conv->ptrToDevConv, 1);
-	Saxpy(alphal,conv->pbias.size(), conv->ptrToGradDevBias, 1, conv->ptrToDevBias, 1);
+
 	error->checkError(cudaDeviceSynchronize());
 	if (output) {
 		conv->printDevCB(5);
@@ -159,8 +161,7 @@ void PropagationHelper::UpdateWeightsConv(float learning_rate,ConvLayer* conv,bo
 void PropagationHelper::UpdateWeightsFull(float learning_rate, FullyConnectedLayer *full,bool output) {
 	float alphal = -learning_rate;
 	float* dstData;
-	error->checkError(cudaMalloc(&dstData, sizeof(float)* full->inchannel*full->inheight*full->inwidth*full->outputsize));
-
+	
 	if(output){
 		full->printDevNB(5);
 		full->printGradCB(5);
@@ -169,26 +170,28 @@ void PropagationHelper::UpdateWeightsFull(float learning_rate, FullyConnectedLay
 	gemm(CUBLAS_OP_N, CUBLAS_OP_T,
 		full->inputsize, full->outputsize, baSize,
 		alpha, beta,
-		full->prevLayer->ptrToOutData, full->inputsize,
-		full->nextLayer->ptrToGradData, full->outputsize,
+		full->prevLayer->ptrToOutData, full->inputsize,//x
+		full->nextLayer->ptrToGradData, full->outputsize,//dy
 		full->ptrToGradDevNeuron, full->inputsize);
-
+	
+	error->checkError(cudaMalloc(&dstData, sizeof(float)* full->pneurons.size()));
 	geam(CUBLAS_OP_N, full->inputsize, full->outputsize, alphal, alpha,
 		dstData, full->inputsize,
 		full->ptrToGradDevNeuron, full->inputsize,
-		full->ptrtoDevNeuron, full->inputsize);
+		full->ptrToDevNeuron, full->inputsize);
 
 	gemv(full->outputsize, baSize,
-		full->nextLayer->ptrToGradData, full->outputsize,
+		full->nextLayer->ptrToGradData, full->outputsize,//dy
 		onevec, 1,
 		full->ptrToGradDevBias, 1);
-	error->checkError(cudaMalloc(&dstData, sizeof(float)* full->outputsize));
-
+	error->checkError(cudaDeviceSynchronize());
+	error->checkError(cudaMalloc(&dstData, sizeof(float)* full->pbias.size()));
 	geam(CUBLAS_OP_N, 1, full->outputsize,
 		alphal, alpha,
 		dstData, 1,
 		full->ptrToGradDevBias, 1,
-		full->ptrtoDevBias, 1);
+		full->ptrToDevBias, 1);
+
 	if (output) {
 		full->printDevNB(5);
 		std::cout << "__________________________________________________________________________________________________________________________________" << std::endl;

@@ -6,8 +6,8 @@ public:
     std::vector<float> pneurons, pbias;
 	
 	//DEVICE DATA
-	float*ptrtoDevBias = nullptr;
-	float*ptrtoDevNeuron = nullptr;
+	float*ptrToDevBias = nullptr;
+	float*ptrToDevNeuron = nullptr;
 
 	float* ptrToGradDevNeuron = nullptr;
 	float* ptrToGradDevBias = nullptr;

@@ -18,7 +18,7 @@ const cudnnDataType_t dataType =			 CUDNN_DATA_FLOAT;
 const cudnnNanPropagation_t propagateNan =	 CUDNN_PROPAGATE_NAN;
 
 const cudnnConvolutionMode_t convMode =		 CUDNN_CROSS_CORRELATION;
-const cudnnPoolingMode_t poolMode =			 CUDNN_POOLING_MAX;
+const cudnnPoolingMode_t poolMode = CUDNN_POOLING_AVERAGE_COUNT_EXCLUDE_PADDING;
 const cudnnActivationMode_t activationmode = CUDNN_ACTIVATION_SIGMOID;
 
 const unsigned int  lrnN =		 5;
